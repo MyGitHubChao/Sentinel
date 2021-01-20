@@ -15,16 +15,18 @@
  */
 package com.alibaba.csp.sentinel.dashboard.rule.nacos;
 
-import java.util.List;
-
 import com.alibaba.csp.sentinel.dashboard.datasource.entity.rule.FlowRuleEntity;
 import com.alibaba.csp.sentinel.datasource.Converter;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.ConfigFactory;
 import com.alibaba.nacos.api.config.ConfigService;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * @author Eric Zhao
@@ -32,6 +34,11 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class NacosConfig {
+
+    @Value("${spring.cloud.sentinel.datasource.flow.nacos.server-addr}")
+    private String nacosAddr;
+
+    private static Logger logger = LoggerFactory.getLogger(NacosConfig.class);
 
     @Bean
     public Converter<List<FlowRuleEntity>, String> flowRuleEntityEncoder() {
@@ -45,6 +52,6 @@ public class NacosConfig {
 
     @Bean
     public ConfigService nacosConfigService() throws Exception {
-        return ConfigFactory.createConfigService("localhost");
+        return ConfigFactory.createConfigService(nacosAddr);
     }
 }

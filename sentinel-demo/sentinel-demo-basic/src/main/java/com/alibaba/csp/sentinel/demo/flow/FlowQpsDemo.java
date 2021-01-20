@@ -15,12 +15,16 @@
  */
 package com.alibaba.csp.sentinel.demo.flow;
 
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.alibaba.csp.sentinel.datasource.ReadableDataSource;
+import com.alibaba.csp.sentinel.datasource.nacos.NacosDataSource;
 import com.alibaba.csp.sentinel.util.TimeUtil;
 import com.alibaba.csp.sentinel.Entry;
 import com.alibaba.csp.sentinel.SphU;
@@ -28,6 +32,12 @@ import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import com.alibaba.nacos.api.NacosFactory;
+import com.alibaba.nacos.api.PropertyKeyConst;
+import com.alibaba.nacos.api.config.ConfigService;
+import com.alibaba.nacos.api.exception.NacosException;
 
 /**
  * @author jialiang.linjl
@@ -55,19 +65,31 @@ public class FlowQpsDemo {
 
         System.out.println("===== begin to do flow control");
         System.out.println("only 20 requests per second can pass");
-
+        List<String> inputArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&" + inputArgs);
     }
 
-    private static void initFlowQpsRule() {
-        List<FlowRule> rules = new ArrayList<FlowRule>();
+    private static void initFlowQpsRule() throws NacosException {
+       /*  List<FlowRule> rules = new ArrayList<FlowRule>();
         FlowRule rule1 = new FlowRule();
         rule1.setResource(KEY);
         // set limit qps to 20
-        rule1.setCount(20);
+        rule1.setCount(200);
         rule1.setGrade(RuleConstant.FLOW_GRADE_QPS);
         rule1.setLimitApp("default");
         rules.add(rule1);
         FlowRuleManager.loadRules(rules);
+
+       ConfigService configService = NacosFactory.createConfigService("localhost:8848");
+        configService.publishConfig("com.alibaba.csp.sentinel.demo.flow.FlowQpsDemo","SENTINEL_GROUP", String.valueOf(JSON.toJSON(rules)));
+        System.out.println(configService.getConfig("com.alibaba.csp.sentinel.demo.flow.FlowQpsDemo","SENTINEL_GROUP",5000));*/
+
+        Properties properties = new Properties();
+        properties.put(PropertyKeyConst.SERVER_ADDR, "localhost:8848");
+        //properties.put(PropertyKeyConst.NAMESPACE, "nacos-demo");
+        ReadableDataSource<String, List<FlowRule>> flowRuleDataSource = new NacosDataSource<>(properties, "SENTINEL_GROUP", "com.alibaba.csp.sentinel.demo.flow.FlowQpsDemo",
+                source -> JSON.parseObject(source, new TypeReference<List<FlowRule>>() {}));
+        FlowRuleManager.register2Property(flowRuleDataSource.getProperty());
     }
 
     private static void simulateTraffic() {
@@ -117,7 +139,7 @@ public class FlowQpsDemo {
                     + ", block:" + oneSecondBlock);
 
                 if (seconds-- <= 0) {
-                    stop = true;
+                    stop = false;
                 }
             }
 
